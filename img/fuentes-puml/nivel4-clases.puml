@@ -1,0 +1,120 @@
+@startuml Clases_Modulo_ETA
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "Presentación" {
+  class EtaController {
+    +obtenerEta(req, res): Promise<void>
+  }
+}
+
+package "Aplicación" {
+  class ConsultarEtaUseCase {
+    -ttlPosicionSegundos: number
+    -maxResultados: number
+    +ejecutar(query: ConsultarEtaQuery): Promise<ConsultarEtaResultado>
+  }
+  class ConsultarEtaQuery <<DTO>> {
+    +paradaId: string
+    +rutaId: string
+  }
+  class ConsultarEtaResultado <<DTO>> {
+    +paradaId: string
+    +paradaNombre: string
+    +vehiculos: EtaVehiculoDTO[]
+  }
+}
+
+package "Dominio" {
+  class Coordenada <<Value Object>> {
+    +latitud: number
+    +longitud: number
+    +distanciaMetrosA(otra: Coordenada): number
+  }
+  class Parada <<Entidad>> {
+    +id: string
+    +rutaId: string
+    +nombre: string
+    +orden: number
+    +coordenada: Coordenada
+  }
+  class PosicionVehiculo <<Entidad>> {
+    +vehiculoId: string
+    +rutaId: string
+    +coordenada: Coordenada
+    +velocidadKmh: number
+    +ultimaParadaOrden: number
+    +registradaEn: Date
+    +estaVigente(ttl: number): boolean
+  }
+  class EstimacionEta <<Value Object>> {
+    +vehiculoId: string
+    +paradaId: string
+    +minutos: number
+    +metodo: MetodoEstimacion
+    +confianza: NivelConfianza
+    +calculadaEn: Date
+    +{static} crear(...): EstimacionEta
+  }
+  interface EtaStrategy <<Puerto>> {
+    +estimar(pos: PosicionVehiculo, parada: Parada): Promise<EstimacionEta>
+  }
+  interface ParadasPort <<Puerto>> {
+    +buscarPorId(id: string): Promise<Parada | null>
+  }
+  interface PosicionesPort <<Puerto>> {
+    +obtenerVigentesPorRuta(rutaId: string): Promise<PosicionVehiculo[]>
+  }
+  interface RoutingPort <<Puerto>> {
+    +calcularRuta(origen: Coordenada, destino: Coordenada): Promise<ResultadoRuta>
+  }
+  class EtaPorRuteo {
+    +estimar(pos, parada): Promise<EstimacionEta>
+  }
+  class EtaPorVelocidadPromedio {
+    -velocidadPromedioKmh: number
+    -factorRodeo: number
+    +estimar(pos, parada): Promise<EstimacionEta>
+  }
+  class EtaConRespaldo {
+    -principal: EtaStrategy
+    -respaldo: EtaStrategy
+    +estimar(pos, parada): Promise<EstimacionEta>
+  }
+}
+
+package "Infraestructura" {
+  class OsrmRoutingAdapter {
+    -baseUrl: string
+    -timeoutMs: number
+    +calcularRuta(origen, destino): Promise<ResultadoRuta>
+  }
+  class RutasApiAdapter {
+    +buscarPorId(id): Promise<Parada | null>
+  }
+  class SeguimientoApiAdapter {
+    +obtenerVigentesPorRuta(rutaId): Promise<PosicionVehiculo[]>
+  }
+}
+
+EtaController --> ConsultarEtaUseCase
+ConsultarEtaUseCase ..> ConsultarEtaQuery
+ConsultarEtaUseCase ..> ConsultarEtaResultado
+ConsultarEtaUseCase --> ParadasPort
+ConsultarEtaUseCase --> PosicionesPort
+ConsultarEtaUseCase --> EtaStrategy
+
+EtaPorRuteo ..|> EtaStrategy
+EtaPorVelocidadPromedio ..|> EtaStrategy
+EtaConRespaldo ..|> EtaStrategy
+EtaConRespaldo o-- EtaStrategy : principal / respaldo
+EtaPorRuteo --> RoutingPort
+
+OsrmRoutingAdapter ..|> RoutingPort
+RutasApiAdapter ..|> ParadasPort
+SeguimientoApiAdapter ..|> PosicionesPort
+
+Parada *-- Coordenada
+PosicionVehiculo *-- Coordenada
+EtaStrategy ..> EstimacionEta
+@enduml

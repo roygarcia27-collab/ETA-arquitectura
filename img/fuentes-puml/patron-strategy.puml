@@ -1,0 +1,33 @@
+@startuml patron-strategy
+skinparam classAttributeIconSize 0
+hide empty members
+title Patrón Strategy - Cálculo de ETA
+
+class ConsultarEtaUseCase <<Contexto>> {
+  -etaStrategy: EtaStrategy
+  +ejecutar(query): Promise<ConsultarEtaResultado>
+}
+interface EtaStrategy <<Strategy>> {
+  +estimar(pos: PosicionVehiculo, parada: Parada): Promise<EstimacionEta>
+}
+class EtaPorRuteo <<Estrategia concreta>> {
+  -routingPort: RoutingPort
+}
+class EtaPorVelocidadPromedio <<Estrategia concreta>> {
+  -velocidadPromedioKmh: number
+  -factorRodeo: number
+}
+class EtaConRespaldo <<Estrategia compuesta>> {
+  -principal: EtaStrategy
+  -respaldo: EtaStrategy
+}
+class EtaPorHistorico <<Futura>> {
+}
+
+ConsultarEtaUseCase --> EtaStrategy
+EtaPorRuteo ..|> EtaStrategy
+EtaPorVelocidadPromedio ..|> EtaStrategy
+EtaConRespaldo ..|> EtaStrategy
+EtaPorHistorico ..|> EtaStrategy
+EtaConRespaldo o-- EtaStrategy : principal / respaldo
+@enduml

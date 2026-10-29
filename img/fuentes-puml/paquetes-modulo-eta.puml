@@ -1,0 +1,36 @@
+@startuml paquetes-modulo-eta
+skinparam packageStyle rectangle
+title Paquetes del módulo ETA (Clean Architecture)
+
+package "presentacion" {
+  [eta.controller]
+  [eta.routes]
+}
+package "aplicacion" {
+  [consultar-eta.use-case]
+  [consultar-eta.query]
+  [consultar-eta.resultado]
+}
+package "dominio" {
+  [coordenada]
+  [parada]
+  [posicion-vehiculo]
+  [estimacion-eta]
+  [puertos (paradas, posiciones, routing, eta-strategy)]
+  [estrategias]
+}
+package "infraestructura" {
+  [osrm-routing.adapter]
+  [rutas-api.adapter]
+  [seguimiento-api.adapter]
+}
+
+[eta.routes] --> [eta.controller]
+[eta.controller] --> [consultar-eta.use-case]
+[consultar-eta.use-case] --> [puertos (paradas, posiciones, routing, eta-strategy)]
+[consultar-eta.use-case] --> [estimacion-eta]
+[estrategias] --> [puertos (paradas, posiciones, routing, eta-strategy)]
+[osrm-routing.adapter] ..> [puertos (paradas, posiciones, routing, eta-strategy)] : implementa
+[rutas-api.adapter] ..> [puertos (paradas, posiciones, routing, eta-strategy)] : implementa
+[seguimiento-api.adapter] ..> [puertos (paradas, posiciones, routing, eta-strategy)] : implementa
+@enduml

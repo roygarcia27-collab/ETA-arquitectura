@@ -1,0 +1,34 @@
+@startuml patron-observer
+skinparam classAttributeIconSize 0
+hide empty members
+title Patrón Observer - PosicionActualizada
+
+class ReportarPosicionUseCase <<Publicador>> {
+  +ejecutar(cmd): Promise<void>
+}
+class EventBus <<Subject>> {
+  +publicar(evento): void
+  +suscribir(tipo, handler): void
+}
+class PosicionActualizada <<Evento>> {
+  +vehiculoId: string
+  +rutaId: string
+  +coordenada: Coordenada
+  +registradaEn: Date
+}
+interface EventHandler <<Observer>> {
+  +manejar(evento): Promise<void>
+}
+class AlertasHandler <<Observador concreto>> {
+  +manejar(evento): Promise<void>
+}
+class HistorialWriter <<Observador concreto>> {
+  +manejar(evento): Promise<void>
+}
+
+ReportarPosicionUseCase --> EventBus : publicar()
+EventBus ..> PosicionActualizada
+EventBus o-- EventHandler : notifica
+AlertasHandler ..|> EventHandler
+HistorialWriter ..|> EventHandler
+@enduml

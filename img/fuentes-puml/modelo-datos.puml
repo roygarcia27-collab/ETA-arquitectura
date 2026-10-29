@@ -1,0 +1,102 @@
+@startuml Modelo_Datos
+hide circle
+skinparam linetype ortho
+
+entity "usuario" as usuario {
+  * id : uuid <<PK>>
+  --
+  * nombre : varchar
+  * email : varchar <<UNIQUE>>
+  * password_hash : varchar
+  * rol : varchar  (PASAJERO | CONDUCTOR | OPERADOR | ADMIN)
+  empresa_id : uuid <<FK>>
+  * activo : boolean
+}
+
+entity "empresa" as empresa {
+  * id : uuid <<PK>>
+  --
+  * nombre : varchar
+  ruc : varchar
+  * activa : boolean
+}
+
+entity "ruta" as ruta {
+  * id : uuid <<PK>>
+  --
+  * codigo : varchar
+  * nombre : varchar
+  empresa_id : uuid <<FK>>
+  trazado : geography(LineString)
+  * activa : boolean
+}
+
+entity "parada_ruta" as parada {
+  * id : uuid <<PK>>
+  --
+  * ruta_id : uuid <<FK>>
+  * orden : int
+  * nombre : varchar
+  * ubicacion : geography(Point)
+}
+
+entity "vehiculo" as vehiculo {
+  * id : uuid <<PK>>
+  --
+  * placa : varchar <<UNIQUE>>
+  * empresa_id : uuid <<FK>>
+  ruta_id : uuid <<FK>>
+  * activo : boolean
+}
+
+entity "recorrido" as recorrido {
+  * id : uuid <<PK>>
+  --
+  * vehiculo_id : uuid <<FK>>
+  * conductor_id : uuid <<FK>>
+  * ruta_id : uuid <<FK>>
+  * estado : varchar
+  * inicio : timestamptz
+  fin : timestamptz
+}
+
+entity "posicion_historial" as posicion {
+  * id : bigint <<PK>>
+  --
+  * recorrido_id : uuid <<FK>>
+  * ubicacion : geography(Point)
+  velocidad_kmh : numeric
+  ultima_parada_orden : int
+  * registrada_en : timestamptz
+}
+
+entity "parada_favorita" as favorita {
+  * id : uuid <<PK>>
+  --
+  * usuario_id : uuid <<FK>>
+  * parada_id : uuid <<FK>>
+}
+
+entity "alerta_proximidad" as alerta {
+  * id : uuid <<PK>>
+  --
+  * usuario_id : uuid <<FK>>
+  * parada_id : uuid <<FK>>
+  * umbral_minutos : int
+  * activa : boolean
+  push_token : text
+}
+
+empresa ||--o{ usuario
+empresa ||--o{ ruta
+empresa ||--o{ vehiculo
+ruta ||--o{ parada
+ruta ||--o{ recorrido
+vehiculo ||--o{ recorrido
+usuario ||--o{ recorrido : conductor
+recorrido ||--o{ posicion
+usuario ||--o{ favorita
+parada ||--o{ favorita
+usuario ||--o{ alerta
+parada ||--o{ alerta
+@enduml

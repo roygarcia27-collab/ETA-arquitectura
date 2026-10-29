@@ -1,0 +1,41 @@
+@startuml patron-factory
+skinparam classAttributeIconSize 0
+hide empty members
+title Patrón Factory - Creación de PosicionVehiculo
+
+class ReportarPosicionUseCase <<Cliente>> {
+  +ejecutar(cmd): Promise<void>
+}
+class PosicionFactory <<Fábrica>> {
+  +{static} desdeReporte(dto: ReporteDTO, recorrido: Recorrido): PosicionVehiculo
+}
+class ReporteDTO <<DTO>> {
+  +latitud: number
+  +longitud: number
+  +velocidadKmh: number
+  +timestamp: string
+}
+class Recorrido {
+  +id: string
+  +vehiculoId: string
+  +rutaId: string
+}
+class PosicionVehiculo <<Producto>> {
+  +vehiculoId: string
+  +rutaId: string
+  +ultimaParadaOrden: number
+}
+class Coordenada <<Value Object>> {
+}
+
+ReportarPosicionUseCase --> PosicionFactory
+PosicionFactory ..> ReporteDTO
+PosicionFactory ..> Recorrido
+PosicionFactory ..> PosicionVehiculo : crea
+PosicionVehiculo *-- Coordenada
+note right of PosicionFactory
+  Valida coordenadas (RN-01),
+  normaliza la marca de tiempo
+  y deriva la última parada visitada.
+end note
+@enduml

@@ -1,0 +1,61 @@
+@startuml Secuencia_ConsultarETA
+autonumber
+skinparam responseMessageBelowArrow true
+
+actor Pasajero as P
+participant "App Pasajero\n(PWA)" as APP
+participant "EtaController" as C
+participant "ConsultarEtaUseCase" as UC
+participant "ParadasPort\n(RutasApiAdapter)" as PP
+participant "PosicionesPort\n(SeguimientoApiAdapter)" as POS
+participant "EtaConRespaldo\n(EtaStrategy)" as ES
+participant "EtaPorRuteo" as ER
+participant "RoutingPort\n(OsrmRoutingAdapter)" as RP
+participant "EtaPorVelocidadPromedio" as EV
+
+P -> APP : Selecciona una parada
+APP -> C : GET /api/v1/paradas/{id}/eta?rutaId=...
+C -> UC : ejecutar(query)
+UC -> PP : buscarPorId(paradaId)
+
+alt Parada no existe o no pertenece a la ruta
+  PP --> UC : null
+  UC --> C : lanza ParadaNoEncontradaError
+  C --> APP : 404 Not Found
+else Parada válida
+  PP --> UC : Parada
+  UC -> POS : obtenerVigentesPorRuta(rutaId)
+  POS --> UC : PosicionVehiculo[] (desde Redis)
+  UC -> UC : filtrar vigentes (≤ 60 s) y\nvehículos que aún no pasaron la parada
+
+  alt No hay vehículos candidatos
+    UC --> C : resultado con lista vacía
+    C --> APP : 200 OK {vehiculos: []}
+    APP --> P : "Sin vehículos en servicio"
+  else Hay vehículos candidatos
+    note over UC
+      Las estimaciones por vehículo
+      se ejecutan en paralelo (Promise.all)
+    end note
+    loop por cada vehículo candidato
+      UC -> ES : estimar(posicion, parada)
+      ES -> ER : estimar(posicion, parada)
+      ER -> RP : calcularRuta(origen, destino)
+      alt Servicio de mapas responde (≤ 2 s)
+        RP --> ER : {distanciaMetros, duracionSegundos}
+        ER --> ES : EstimacionEta (confianza ALTA)
+      else Timeout o error del servicio
+        RP --> ER : Error
+        ER --> ES : lanza error
+        ES -> EV : estimar(posicion, parada)
+        EV --> ES : EstimacionEta (confianza BAJA)
+      end
+      ES --> UC : EstimacionEta
+    end
+    UC -> UC : ordenar por minutos y\ntomar los 3 primeros
+    UC --> C : ConsultarEtaResultado
+    C --> APP : 200 OK {vehiculos: [...]}
+    APP --> P : "Llega en N min"
+  end
+end
+@enduml

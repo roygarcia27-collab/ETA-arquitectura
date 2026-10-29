@@ -1,0 +1,33 @@
+@startuml principio-dip
+skinparam classAttributeIconSize 0
+hide empty members
+title Principio DIP - Inversión de Dependencias en el módulo ETA
+
+package "Alto nivel (Aplicación / Dominio)" {
+  class ConsultarEtaUseCase
+  interface ParadasPort
+  interface PosicionesPort
+  interface EtaStrategy
+  interface RoutingPort
+}
+
+package "Bajo nivel (Infraestructura)" {
+  class RutasApiAdapter
+  class SeguimientoApiAdapter
+  class OsrmRoutingAdapter
+}
+
+ConsultarEtaUseCase --> ParadasPort
+ConsultarEtaUseCase --> PosicionesPort
+ConsultarEtaUseCase --> EtaStrategy
+EtaStrategy ..> RoutingPort : (EtaPorRuteo)
+
+RutasApiAdapter ..|> ParadasPort
+SeguimientoApiAdapter ..|> PosicionesPort
+OsrmRoutingAdapter ..|> RoutingPort
+
+note bottom of "Bajo nivel (Infraestructura)"
+  Las flechas de código apuntan hacia las abstracciones.
+  Infraestructura depende del dominio, no al revés.
+end note
+@enduml

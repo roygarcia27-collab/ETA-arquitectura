@@ -1,0 +1,54 @@
+@startuml C4_N3_Componentes
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Nivel 3 - Componentes del Contenedor API ETA
+
+Container(apps, "Apps Web (PWA y Panel)", "Angular", "Pasajero, Conductor y Gestión")
+ContainerDb(redis, "Redis", "Caché y posiciones")
+ContainerDb(db, "PostgreSQL + PostGIS", "Datos e historial")
+System_Ext(mapas, "Servicio de Mapas y Ruteo")
+System_Ext(push, "Firebase Cloud Messaging")
+System_Ext(correo, "Proveedor de Correo")
+
+Container_Boundary(api, "API ETA (Monolito Modular)") {
+  Component(rest, "API REST", "Express (src/api)", "Rutas HTTP, JWT, roles, rate limiting y validación.")
+  Component(usuarios, "Módulo Usuarios", "TypeScript", "Registro, login, roles y JWT.")
+  Component(empresas, "Módulo Empresas", "TypeScript", "Empresas y asociaciones de transporte.")
+  Component(rutas, "Módulo Rutas", "TypeScript", "Rutas, trazados y paradas. Lecturas cacheadas (Decorator).")
+  Component(flota, "Módulo Flota", "TypeScript", "Vehículos, conductores, asignaciones y recorridos.")
+  Component(seg, "Módulo Seguimiento", "TypeScript", "Ingesta de posiciones y estado SIN_SEÑAL.")
+  Component(etam, "Módulo ETA", "TypeScript", "Cálculo de ETA (Strategy con respaldo).")
+  Component(susc, "Módulo Suscripciones", "TypeScript", "Favoritos y alertas de proximidad.")
+  Component(notif, "Módulo Notificaciones", "TypeScript", "Fachada de canales push y correo.")
+  Component(bus, "Bus de Eventos", "EventEmitter", "PosicionActualizada, VehiculoSinSenal, RecorridoFinalizado.")
+}
+
+Rel(apps, rest, "Invoca", "HTTPS/JSON")
+Rel(rest, usuarios, "Delega")
+Rel(rest, empresas, "Delega")
+Rel(rest, rutas, "Delega")
+Rel(rest, flota, "Delega")
+Rel(rest, seg, "Delega")
+Rel(rest, etam, "Delega")
+Rel(rest, susc, "Delega")
+
+Rel(etam, rutas, "Obtiene parada (API pública)")
+Rel(etam, seg, "Obtiene posiciones vigentes (API pública)")
+Rel(seg, flota, "Valida recorrido activo (API pública)")
+Rel(seg, bus, "Publica PosicionActualizada")
+Rel(susc, bus, "Se suscribe a eventos")
+Rel(susc, etam, "Solicita ETA")
+Rel(susc, notif, "Solicita alerta")
+
+Rel(rutas, redis, "Caché de rutas y paradas")
+Rel(seg, redis, "Última posición (TTL 60 s)")
+Rel(seg, db, "Historial por lotes")
+Rel(rutas, db, "Lee/escribe")
+Rel(flota, db, "Lee/escribe")
+Rel(usuarios, db, "Lee/escribe")
+Rel(susc, db, "Lee/escribe")
+
+Rel(etam, mapas, "Ruta y duración", "HTTPS/REST")
+Rel(notif, push, "Envía push", "HTTPS/REST")
+Rel(usuarios, correo, "Correos de cuenta", "SMTP")
+@enduml

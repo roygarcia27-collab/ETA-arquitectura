@@ -1,0 +1,28 @@
+@startuml patron-adapter
+skinparam classAttributeIconSize 0
+hide empty members
+title Patrón Adapter - Servicio de Mapas y Ruteo
+
+class EtaPorRuteo <<Cliente>> {
+  +estimar(pos, parada): Promise<EstimacionEta>
+}
+interface RoutingPort <<Target>> {
+  +calcularRuta(origen: Coordenada, destino: Coordenada): Promise<ResultadoRuta>
+}
+class OsrmRoutingAdapter <<Adapter>> {
+  -baseUrl: string
+  -timeoutMs: number
+  +calcularRuta(origen, destino): Promise<ResultadoRuta>
+}
+class MapboxRoutingAdapter <<Adapter>> {
+  +calcularRuta(origen, destino): Promise<ResultadoRuta>
+}
+class "API HTTP de OSRM" as Osrm <<Adaptee>>
+class "API HTTP de Mapbox" as Mapbox <<Adaptee>>
+
+EtaPorRuteo --> RoutingPort
+OsrmRoutingAdapter ..|> RoutingPort
+MapboxRoutingAdapter ..|> RoutingPort
+OsrmRoutingAdapter --> Osrm : GET /route/v1/driving/...
+MapboxRoutingAdapter --> Mapbox : GET /directions/v5/...
+@enduml

@@ -1,0 +1,11 @@
+@startuml Estados_Recorrido
+[*] --> PROGRAMADO
+PROGRAMADO --> EN_CURSO : conductor inicia recorrido
+PROGRAMADO --> CANCELADO : operador cancela
+EN_CURSO --> SIN_SENAL : sin posición por más de 60 s
+SIN_SENAL --> EN_CURSO : se recibe una nueva posición
+EN_CURSO --> FINALIZADO : conductor finaliza
+SIN_SENAL --> FINALIZADO : cierre automático por inactividad prolongada
+FINALIZADO --> [*]
+CANCELADO --> [*]
+@enduml

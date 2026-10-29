@@ -1,0 +1,52 @@
+@startuml Secuencia_ReportarPosicion
+autonumber
+
+actor Conductor as D
+participant "App Conductor\n(PWA)" as APP
+participant "JwtMiddleware" as MW
+participant "PosicionController" as C
+participant "ReportarPosicionUseCase" as UC
+participant "RecorridoPort\n(FlotaApiAdapter)" as FP
+participant "PosicionStore\n(RedisPosicionStore)" as ST
+participant "EventBus" as EB
+participant "AlertasHandler\n(Suscripciones)" as H
+participant "NotificacionFacade" as NF
+participant "Firebase Cloud\nMessaging" as FCM
+participant "HistorialWriter" as HW
+database "PostgreSQL" as DB
+
+D -> APP : Recorrido en curso
+loop cada 5 segundos
+  APP -> MW : POST /api/v1/posiciones {lat, lng, vel, ts} + JWT
+  alt Token inválido o rol distinto de CONDUCTOR
+    MW --> APP : 401 / 403
+  else Token válido
+    MW -> C : solicitud autenticada
+    C -> UC : ejecutar(cmd)
+    UC -> FP : obtenerRecorridoActivo(conductorId)
+    alt Sin recorrido activo
+      FP --> UC : null
+      UC --> C : lanza RecorridoNoActivoError
+      C --> APP : 409 Conflict
+    else Recorrido activo
+      FP --> UC : Recorrido
+      UC -> UC : crear PosicionVehiculo\n(valida coordenadas)
+      UC -> ST : guardarUltima(posicion, ttl = 60 s)
+      UC -> EB : publicar(PosicionActualizada)
+      UC --> C : OK
+      C --> APP : 204 No Content
+    end
+  end
+end
+
+== Procesamiento asíncrono (no bloquea la respuesta al conductor) ==
+EB -> H : PosicionActualizada
+H -> H : evaluar favoritos de la ruta\n(ETA ≤ umbral del usuario)
+H -> NF : alertarProximidad(suscripcion, eta)
+NF -> FCM : enviar notificación push (HTTPS)
+FCM --> NF : 200 OK
+
+EB -> HW : PosicionActualizada
+HW -> HW : acumular en búfer
+HW -> DB : INSERT por lotes (cada 30 s)
+@enduml

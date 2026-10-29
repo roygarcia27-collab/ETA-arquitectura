@@ -1,0 +1,38 @@
+@startuml C4_N2_Contenedores
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Nivel 2 - Diagrama de Contenedores: ETA Ayacucho
+
+Person(pasajero, "Pasajero")
+Person(conductor, "Conductor")
+Person(operador, "Operador de Empresa")
+Person(admin, "Administrador")
+
+System_Boundary(sistema, "ETA Ayacucho") {
+  Container(webPasajero, "App Web del Pasajero", "Angular PWA, Leaflet", "Mapa, paradas, ETA, favoritos y alertas. Caché offline de rutas.")
+  Container(webConductor, "App Web del Conductor", "Angular PWA, Geolocation API", "Inicio/fin de recorrido y envío de posición. Búfer offline en IndexedDB.")
+  Container(webGestion, "Panel de Gestión", "Angular", "Flota, rutas, paradas y reportes.")
+  Container(api, "API ETA", "Node.js, Express, TypeScript", "Monolito modular: valida JWT, ejecuta casos de uso y calcula el ETA.")
+  ContainerDb(redis, "Caché y posiciones en vivo", "Redis", "Última posición por vehículo (TTL 60 s) y caché de rutas y paradas.")
+  ContainerDb(db, "Base de Datos", "PostgreSQL + PostGIS", "Datos transaccionales y geoespaciales; historial de posiciones.")
+}
+
+System_Ext(mapas, "Servicio de Mapas y Ruteo", "OSRM / Mapbox / Google")
+System_Ext(push, "Notificaciones Push", "Firebase Cloud Messaging")
+System_Ext(correo, "Proveedor de Correo", "SMTP")
+
+Rel(pasajero, webPasajero, "Usa", "HTTPS")
+Rel(conductor, webConductor, "Usa", "HTTPS")
+Rel(operador, webGestion, "Usa", "HTTPS")
+Rel(admin, webGestion, "Usa", "HTTPS")
+
+Rel(webPasajero, api, "Consulta ETA y mapa (polling 10 s)", "HTTPS/JSON")
+Rel(webConductor, api, "Inicia recorrido y reporta posición (cada 5 s)", "HTTPS/JSON")
+Rel(webGestion, api, "Gestiona flota, rutas y reportes", "HTTPS/JSON")
+
+Rel(api, redis, "Lee/escribe posiciones y caché", "TCP/RESP")
+Rel(api, db, "Lee/escribe datos e historial", "SQL/TCP")
+Rel(api, mapas, "Solicita ruta y duración", "HTTPS/REST")
+Rel(api, push, "Envía alertas", "HTTPS/REST")
+Rel(api, correo, "Envía correos", "SMTP")
+@enduml

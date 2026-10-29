@@ -1,0 +1,25 @@
+@startuml C4_N1_Contexto
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title Nivel 1 - Diagrama de Contexto: ETA Ayacucho
+
+Person(pasajero, "Pasajero", "Consulta rutas, paradas y ETA. Opcionalmente guarda favoritos y recibe alertas.")
+Person(conductor, "Conductor", "Inicia y finaliza su recorrido y comparte su ubicación desde su celular.")
+Person(operador, "Operador de Empresa", "Gestiona flota y conductores; consulta reportes de puntualidad.")
+Person(admin, "Administrador", "Gestiona empresas, rutas y paradas de la plataforma.")
+
+System(eta, "ETA Ayacucho", "Calcula y publica en tiempo casi real la hora estimada de llegada de los vehículos de transporte público urbano.")
+
+System_Ext(mapas, "Servicio de Mapas y Ruteo", "OSRM / Mapbox / Google Directions. Tiempo de viaje por calle.")
+System_Ext(push, "Servicio de Notificaciones Push", "Firebase Cloud Messaging (Web Push).")
+System_Ext(correo, "Proveedor de Correo", "SMTP. Verificación de cuenta y recuperación de contraseña.")
+
+Rel(pasajero, eta, "Consulta ETA, rutas y mapa", "HTTPS")
+Rel(conductor, eta, "Inicia recorrido y reporta posición", "HTTPS")
+Rel(operador, eta, "Gestiona flota y consulta reportes", "HTTPS")
+Rel(admin, eta, "Administra empresas, rutas y paradas", "HTTPS")
+
+Rel(eta, mapas, "Solicita ruta y duración", "HTTPS/REST")
+Rel(eta, push, "Envía alertas de proximidad", "HTTPS/REST")
+Rel(eta, correo, "Envía correos transaccionales", "SMTP")
+@enduml

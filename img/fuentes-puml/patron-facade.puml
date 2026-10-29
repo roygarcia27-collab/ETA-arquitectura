@@ -1,0 +1,28 @@
+@startuml patron-facade
+skinparam classAttributeIconSize 0
+hide empty members
+title Patrón Facade - Notificaciones
+
+class AlertasHandler <<Cliente>> {
+}
+class NotificacionFacade <<Fachada>> {
+  +alertarProximidad(suscripcion, eta): Promise<void>
+}
+class PlantillaService {
+  +armarMensaje(eta): string
+}
+interface CanalPushPort {
+  +enviar(token, mensaje): Promise<void>
+}
+class FcmPushAdapter {
+}
+class RegistroEnvios {
+  +registrar(resultado): Promise<void>
+}
+
+AlertasHandler --> NotificacionFacade
+NotificacionFacade --> PlantillaService
+NotificacionFacade --> CanalPushPort
+NotificacionFacade --> RegistroEnvios
+FcmPushAdapter ..|> CanalPushPort
+@enduml

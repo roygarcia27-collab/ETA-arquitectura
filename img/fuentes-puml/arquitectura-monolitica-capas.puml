@@ -1,0 +1,25 @@
+@startuml arquitectura-monolitica-capas
+title Arquitectura Monolítica Modular en Capas - ETA Ayacucho
+skinparam rectangle {
+  RoundCorner 10
+}
+
+rectangle "Navegador: PWA Pasajero | PWA Conductor | Panel de Gestión (Angular)" as web
+
+rectangle "API ETA (un solo despliegue: Node.js + Express + TypeScript)" as api {
+  rectangle "Capa API REST\n(JWT, roles, rate limiting, validación)" as rest
+  rectangle "Módulos de negocio\nUsuarios | Empresas | Rutas | Flota | Seguimiento | ETA | Suscripciones | Notificaciones" as mod
+  rectangle "Capa de adaptadores\n(repositorios, caché, clientes de servicios externos)" as ada
+}
+
+database "PostgreSQL + PostGIS" as db
+database "Redis" as redis
+cloud "Mapas / Push / Correo" as ext
+
+web --> rest : HTTPS / JSON
+rest --> mod
+mod --> ada
+ada --> db : SQL
+ada --> redis : RESP
+ada --> ext : HTTPS / SMTP
+@enduml

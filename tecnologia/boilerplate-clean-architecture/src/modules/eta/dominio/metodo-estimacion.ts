@@ -1,0 +1,4 @@
+export enum MetodoEstimacion {
+  RUTEO_EXTERNO = 'RUTEO_EXTERNO',
+  VELOCIDAD_PROMEDIO = 'VELOCIDAD_PROMEDIO',
+}
